@@ -1,0 +1,44 @@
+# Generic knowledge-source template for new projects.
+# Copy this file into a project-local config (for example: .houram/knowledge_sources.yaml)
+# and replace placeholder paths.
+
+index_name: project_technical_knowledge
+
+sources:
+  - name: houram_context
+    root: /ABSOLUTE/PATH/TO/Tech Architect Agent
+    globs:
+      - AGENTS.md
+      - prompts/*.md
+      - knowledge/*.md
+
+  - name: project_docs
+    root: /ABSOLUTE/PATH/TO/PROJECT/docs
+    globs:
+      - "**/*.md"
+      - "**/*.txt"
+
+  - name: project_source
+    root: /ABSOLUTE/PATH/TO/PROJECT
+    globs:
+      - "**/*.py"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.js"
+      - "**/*.go"
+      - "**/*.java"
+      - "**/*.rs"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.toml"
+      - "**/*.json"
+      - README.md
+    exclude:
+      - ".git/**"
+      - ".venv/**"
+      - "venv/**"
+      - "node_modules/**"
+      - ".next/**"
+      - "dist/**"
+      - "build/**"
+      - "__pycache__/**"

@@ -12,7 +12,11 @@ The agent acts as an on-demand CTO, software architect, and senior AI engineer. 
    cursor "/Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent"
    ```
 
-2. Ask technical questions normally. The workspace-level Cursor rule in `.cursor/rules/tech-architect-agent.mdc` tells the agent how to respond.
+2. Add Houram as a global Cursor User Rule so it works in every project:
+
+   - Open `Cursor Settings -> Rules`
+   - Create a new **User Rule**
+   - Paste the contents of `rules/houram-user-rule.md`
 
 3. Use `Houram, ...` when you want to explicitly call the advisor, for example:
 
@@ -22,9 +26,29 @@ The agent acts as an on-demand CTO, software architect, and senior AI engineer. 
 
 4. If you need code-specific advice, attach the relevant project file or paste the error. The advisor should not invent current implementation details.
 
+## Use Houram In Any New Project
+
+Initialize a project once to add project-local Houram files:
+
+```bash
+tech-architect init-project "/absolute/path/to/your-project"
+```
+
+This adds:
+
+- `.cursor/rules/houram-advisor.mdc`
+- `.houram/PROJECT_CONTEXT.md`
+- `.houram/knowledge_sources.yaml`
+
+Then fill `.houram/PROJECT_CONTEXT.md` and build the project index:
+
+```bash
+tech-architect build-index --config "/absolute/path/to/your-project/.houram/knowledge_sources.yaml"
+```
+
 ## Knowledge Sources
 
-Current knowledge sources are LibZone-specific:
+Current default knowledge sources are LibZone-specific:
 
 - `/Users/sanazslm/Documents/LibZone.ca/LibZone/Documents`
 - `/Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-core`
@@ -32,7 +56,8 @@ Current knowledge sources are LibZone-specific:
 - `/Users/sanazslm/Documents/LibZone.ca/libzone-evals`
 - `/Users/sanazslm/Documents/LibZone.ca/libzone-evals-review`
 
-The source list is configured in `config/knowledge_sources.yaml`. For a future project, add that project's docs and source paths there.
+The default source list is configured in `config/knowledge_sources.yaml`.
+For a future project, prefer `tech-architect init-project` and then edit that project's `.houram/knowledge_sources.yaml`.
 
 ## Optional Local Knowledge Index
 
@@ -48,6 +73,13 @@ cp .env.example .env
 tech-architect build-index
 tech-architect context "Should Phase 1 use hybrid retrieval immediately?"
 tech-architect ask "Should we add Redis now or defer it?"
+```
+
+For project-specific indexing:
+
+```bash
+tech-architect build-index --config "/absolute/path/to/project/.houram/knowledge_sources.yaml"
+tech-architect ask --config "/absolute/path/to/project/.houram/knowledge_sources.yaml" "Houram, what is the biggest technical risk?"
 ```
 
 Use `context` when you want retrieved evidence to paste into Cursor. Use `ask` when you want the local CLI to answer with the same advisor structure.

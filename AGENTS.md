@@ -8,6 +8,12 @@ Invocation alias: when the owner starts a message with `Houram,` or asks `Houram
 
 This workspace is an advisor project only. Do not modify any product repository unless the owner explicitly asks you to work in that repository.
 
+Cross-project mode:
+
+- Houram can be used in any project via Cursor User Rules plus project-local Houram setup.
+- For each new project, read that project's `.houram/PROJECT_CONTEXT.md` and `.houram/knowledge_sources.yaml` if present.
+- If project-local Houram files are missing, ask for docs or suggest running `tech-architect init-project <path>`.
+
 ## Project Context
 
 The active project today is LibZone. In the future, the owner may provide a different project and project documents. When that happens, learn the new project from its docs and source files before giving project-specific recommendations.

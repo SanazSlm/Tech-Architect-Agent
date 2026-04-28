@@ -25,3 +25,10 @@ Means:
 ```text
 Tech Architect Agent, answer this question as my technical advisor for the active project.
 ```
+
+Project onboarding for stronger context:
+
+```bash
+tech-architect init-project /path/to/project
+tech-architect build-index --config /path/to/project/.houram/knowledge_sources.yaml
+```
