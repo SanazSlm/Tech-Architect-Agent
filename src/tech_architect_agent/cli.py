@@ -144,6 +144,62 @@ def embed_texts(client: OpenAI, texts: list[str]) -> list[list[float]]:
     return [item.embedding for item in response.data]
 
 
+def _is_embedding_length_error(error: BadRequestError) -> bool:
+    message = str(error).lower()
+    return "maximum input length" in message or "8192" in message
+
+
+def _parse_invalid_input_index(error: BadRequestError) -> int | None:
+    message = str(error)
+    match = re.search(r"Invalid 'input\[(\d+)\]'", message)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def _split_text_in_half(text: str) -> tuple[str, str]:
+    if len(text) <= 1:
+        return text, ""
+    midpoint = len(text) // 2
+    left = text[:midpoint]
+    right = text[midpoint:]
+    return left.strip(), right.strip()
+
+
+def embed_texts_resilient(client: OpenAI, texts: list[str]) -> list[list[float]]:
+    """Embed many strings, automatically splitting inputs that exceed model limits."""
+
+    pending = list(texts)
+
+    while True:
+        try:
+            return embed_texts(client, pending)
+        except BadRequestError as error:
+            if not _is_embedding_length_error(error):
+                raise
+
+            bad_index = _parse_invalid_input_index(error)
+            if bad_index is None or bad_index < 0 or bad_index >= len(pending):
+                bad_index = max(range(len(pending)), key=lambda index: len(pending[index]))
+
+            bad_text = pending[bad_index]
+            left, right = _split_text_in_half(bad_text)
+
+            if not right:
+                raise typer.BadParameter(
+                    "Embedding input exceeded model limits and could not be split smaller. "
+                    "Try lowering TECH_ARCHITECT_EMBED_MAX_CHARS / TECH_ARCHITECT_EMBED_CHUNK_CHARS, "
+                    "or exclude extremely dense files from knowledge_sources.yaml."
+                ) from error
+
+            console.print(
+                f"[yellow]Embedding input too long; splitting one segment ({len(bad_text)} chars) "
+                f"into {len(left)} + {len(right)} chars and retrying...[/yellow]"
+            )
+
+            pending[bad_index : bad_index + 1] = [left, right]
+
+
 def _retry_delay_seconds(error: Exception, attempt: int) -> float:
     # Try to use server hint ("Please try again in 373ms"), else exponential backoff.
     message = str(error)
@@ -164,15 +220,7 @@ def embed_texts_with_retry(
     attempt = 1
     while True:
         try:
-            return embed_texts(client, texts)
-        except BadRequestError as error:
-            message = str(error).lower()
-            if "maximum input length" in message or "8192" in message:
-                raise typer.BadParameter(
-                    "Embedding input exceeded model limits. Re-run build-index after pulling the latest "
-                    "tech-architect-agent (chunk sizing was tightened), or lower TECH_ARCHITECT_EMBED_MAX_CHARS."
-                ) from error
-            raise
+            return embed_texts_resilient(client, texts)
         except RateLimitError as error:
             if attempt >= max_attempts:
                 raise
@@ -374,7 +422,7 @@ def retrieve(question: str, config_path: Path, index_dir: Path | None, top_k: in
     client = require_openai_client()
     resolved_index_dir = resolve_index_dir(config_path, index_dir)
     collection = get_collection(config, resolved_index_dir)
-    query_embedding = embed_texts(client, [question])[0]
+    query_embedding = embed_texts_resilient(client, [question])[0]
 
     result = collection.query(query_embeddings=[query_embedding], n_results=top_k)
     documents = result.get("documents", [[]])[0]

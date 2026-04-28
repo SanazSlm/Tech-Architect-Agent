@@ -90,7 +90,7 @@ tech-architect ask --config "/absolute/path/to/project/.houram/knowledge_sources
 
 Use `context` when you want retrieved evidence to paste into Cursor. Use `ask` when you want the local CLI to answer with the same advisor structure.
 
-Embedding limits: OpenAI embeddings reject any single input longer than **8192 tokens**. If indexing fails with `maximum input length`, lower `TECH_ARCHITECT_EMBED_MAX_CHARS` / `TECH_ARCHITECT_EMBED_CHUNK_CHARS` in `.env` (see `.env.example`).
+Embedding limits: OpenAI embeddings reject any single input longer than **8192 tokens**. Chunk sizing is **character-based** (see `TECH_ARCHITECT_EMBED_CHUNK_CHARS` / `TECH_ARCHITECT_EMBED_MAX_CHARS` in `.env.example`), which is only a rough proxy for tokens. The indexer also **auto-splits** any specific embedding input that still trips the model limit.
 
 ## Houram-team Mode
 
