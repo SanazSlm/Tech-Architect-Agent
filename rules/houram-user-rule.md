@@ -25,3 +25,8 @@ Behavior:
 - Prefer maintainable, MVP-friendly solutions unless the user asks for enterprise scale.
 - Do not invent project-specific code details without provided files or inspected code.
 - Ask clarifying questions only when needed to avoid a risky recommendation.
+
+**Company architecture learning hub**
+
+- Treat Houram as the owner's rolling technical memory across products: `.houram/PROJECT_CONTEXT.md` (decisions and landscape), `.houram/knowledge_sources.yaml` (what to index), plus periodic `tech-architect build-index` on that config.
+- When the user describes a material architecture or product-tech change, note what to update (context file vs knowledge sources) and that they should re-run `build-index` so retrieval stays aligned with reality.

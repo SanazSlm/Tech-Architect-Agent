@@ -63,6 +63,14 @@ Current default knowledge sources are LibZone-specific:
 The default source list is configured in `config/knowledge_sources.yaml`.
 For a future project, prefer `tech-architect init-project` and then edit that project's `.houram/knowledge_sources.yaml`.
 
+## Keep the learning hub current (company architecture)
+
+Houram stays aligned with your products when **three** things move together:
+
+1. **`.houram/PROJECT_CONTEXT.md`** — decisions, stack, priorities (edit when something important changes).
+2. **`.houram/knowledge_sources.yaml`** — which repos and doc trees are indexed (add new products or ADR roots here).
+3. **`tech-architect build-index --config ".../.houram/knowledge_sources.yaml"`** — refresh the local index after substantive doc/code changes (default skips chunks already stored; use `--reindex-all` only when you need a full re-embed).
+
 ## Optional Local Knowledge Index
 
 The project includes an optional retrieval helper. It indexes configured project docs/code read-only into a local Chroma collection and can return relevant context for a question.

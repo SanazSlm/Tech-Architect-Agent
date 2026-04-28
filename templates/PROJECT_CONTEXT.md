@@ -44,6 +44,18 @@ Use this file to onboard Houram into a new project quickly.
 - Issue tracker:
 - Repositories:
 
+## Keeping Houram current (learning hub)
+
+Houram reads this file and the local index built from `.houram/knowledge_sources.yaml`. To keep **company / product architecture** advice accurate:
+
+- Update **this file** when you make or reverse a significant technical decision.
+- Add new roots (repos, `docs/`, ADRs) to **`knowledge_sources.yaml`** when a new surface should inform the advisor.
+- Rebuild the index after batches of doc/code change:
+
+  `tech-architect build-index --config <path>/.houram/knowledge_sources.yaml`
+
+  (Omit `--reindex-all` unless you need a full re-embed.)
+
 ## Risks and Known Gaps
 
 - Top technical risks:

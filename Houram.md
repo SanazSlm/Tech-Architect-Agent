@@ -44,3 +44,13 @@ Project onboarding for stronger context:
 tech-architect init-project /path/to/project
 tech-architect build-index --config /path/to/project/.houram/knowledge_sources.yaml
 ```
+
+**Keep the learning hub current (company architecture):**
+
+- Edit `.houram/PROJECT_CONTEXT.md` when decisions, stack, or priorities change.
+- Extend `.houram/knowledge_sources.yaml` when new repos, services, or doc roots should inform advice.
+- Re-index after substantive changes (default skips chunks already stored):
+
+```bash
+tech-architect build-index --config /path/to/project/.houram/knowledge_sources.yaml
+```
