@@ -3,6 +3,9 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import os
+import random
+import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,7 +14,7 @@ import chromadb
 import typer
 import yaml
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import BadRequestError, OpenAI, RateLimitError
 from rich.console import Console
 from rich.panel import Panel
 
@@ -64,7 +67,43 @@ def read_text(path: Path) -> str | None:
         return None
 
 
-def make_chunks(path: Path, text: str, chunk_chars: int = 3200, overlap: int = 350) -> list[Chunk]:
+def max_embed_chars() -> int:
+    """Conservative max chars per embedding input to stay under OpenAI 8192-token limit."""
+    raw = os.getenv("TECH_ARCHITECT_EMBED_MAX_CHARS", "6000")
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 6000
+    return max(2000, min(value, 24000))
+
+
+def split_text_by_max_chars(text: str, limit: int) -> list[str]:
+    if len(text) <= limit:
+        return [text]
+
+    parts: list[str] = []
+    cursor = 0
+    while cursor < len(text):
+        end = min(cursor + limit, len(text))
+        segment = text[cursor:end].strip()
+        if segment:
+            parts.append(segment)
+        cursor = end
+    return parts or [text[:limit]]
+
+
+def make_chunks(path: Path, text: str, chunk_chars: int | None = None, overlap: int = 250) -> list[Chunk]:
+    """Chunk text for embeddings; sizes are conservative vs OpenAI per-input token limits."""
+    if chunk_chars is None:
+        try:
+            chunk_chars = int(os.getenv("TECH_ARCHITECT_EMBED_CHUNK_CHARS", "6000"))
+        except ValueError:
+            chunk_chars = 6000
+
+    embed_limit = max_embed_chars()
+    chunk_chars = max(1000, min(chunk_chars, embed_limit))
+    overlap = max(0, min(overlap, chunk_chars // 4))
+
     chunks: list[Chunk] = []
     start = 0
     ordinal = 0
@@ -74,17 +113,21 @@ def make_chunks(path: Path, text: str, chunk_chars: int = 3200, overlap: int = 3
         chunk_text = text[start:end].strip()
 
         if chunk_text:
-            digest = hashlib.sha256(f"{path}:{ordinal}:{chunk_text}".encode("utf-8")).hexdigest()[:24]
-            chunks.append(
-                Chunk(
-                    id=digest,
-                    text=chunk_text,
-                    metadata={
-                        "path": str(path),
-                        "chunk": str(ordinal),
-                    },
+            for part_index, part in enumerate(split_text_by_max_chars(chunk_text, embed_limit)):
+                digest = hashlib.sha256(
+                    f"{path}:{ordinal}:{part_index}:{part}".encode("utf-8")
+                ).hexdigest()[:24]
+                chunks.append(
+                    Chunk(
+                        id=digest,
+                        text=part,
+                        metadata={
+                            "path": str(path),
+                            "chunk": str(ordinal),
+                            "part": str(part_index),
+                        },
+                    )
                 )
-            )
 
         if end == len(text):
             break
@@ -99,6 +142,47 @@ def embed_texts(client: OpenAI, texts: list[str]) -> list[list[float]]:
     model = os.getenv("TECH_ARCHITECT_EMBEDDING_MODEL", "text-embedding-3-small")
     response = client.embeddings.create(model=model, input=texts)
     return [item.embedding for item in response.data]
+
+
+def _retry_delay_seconds(error: Exception, attempt: int) -> float:
+    # Try to use server hint ("Please try again in 373ms"), else exponential backoff.
+    message = str(error)
+    match = re.search(r"try again in\s+(\d+)ms", message, flags=re.IGNORECASE)
+    if match:
+        base = max(0.2, int(match.group(1)) / 1000.0)
+    else:
+        base = min(8.0, 0.5 * (2 ** (attempt - 1)))
+    jitter = random.uniform(0.0, 0.25)
+    return base + jitter
+
+
+def embed_texts_with_retry(
+    client: OpenAI,
+    texts: list[str],
+    max_attempts: int = 8,
+) -> list[list[float]]:
+    attempt = 1
+    while True:
+        try:
+            return embed_texts(client, texts)
+        except BadRequestError as error:
+            message = str(error).lower()
+            if "maximum input length" in message or "8192" in message:
+                raise typer.BadParameter(
+                    "Embedding input exceeded model limits. Re-run build-index after pulling the latest "
+                    "tech-architect-agent (chunk sizing was tightened), or lower TECH_ARCHITECT_EMBED_MAX_CHARS."
+                ) from error
+            raise
+        except RateLimitError as error:
+            if attempt >= max_attempts:
+                raise
+            delay = _retry_delay_seconds(error, attempt)
+            console.print(
+                f"[yellow]Rate limited on embeddings (attempt {attempt}/{max_attempts}). "
+                f"Retrying in {delay:.2f}s...[/yellow]"
+            )
+            time.sleep(delay)
+            attempt += 1
 
 
 def get_collection(config: dict[str, Any], index_dir: Path):
@@ -258,16 +342,29 @@ def build_index(
 
     console.print(f"Indexing {len(chunks)} chunks from {len(source_files)} files...")
 
-    for offset in range(0, len(chunks), batch_size):
-        batch = chunks[offset : offset + batch_size]
-        embeddings = embed_texts(client, [chunk.text for chunk in batch])
+    offset = 0
+    current_batch_size = max(1, batch_size)
+    while offset < len(chunks):
+        batch = chunks[offset : offset + current_batch_size]
+        try:
+            embeddings = embed_texts_with_retry(client, [chunk.text for chunk in batch])
+        except RateLimitError:
+            if current_batch_size == 1:
+                raise
+            current_batch_size = max(1, current_batch_size // 2)
+            console.print(
+                f"[yellow]Rate limit persisted; reducing batch size to {current_batch_size} and retrying...[/yellow]"
+            )
+            continue
+
         collection.upsert(
             ids=[chunk.id for chunk in batch],
             documents=[chunk.text for chunk in batch],
             metadatas=[chunk.metadata for chunk in batch],
             embeddings=embeddings,
         )
-        console.print(f"Indexed {min(offset + batch_size, len(chunks))}/{len(chunks)} chunks")
+        offset += len(batch)
+        console.print(f"Indexed {offset}/{len(chunks)} chunks")
 
     console.print("[green]Knowledge index is ready.[/green]")
 

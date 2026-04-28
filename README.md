@@ -74,6 +74,8 @@ source .venv/bin/activate
 pip install -e .
 cp .env.example .env
 # Add your real OPENAI_API_KEY to .env. Do not put secrets in README.md.
+# If you change the CLI code, reinstall so `tech-architect` picks up updates:
+# pip install -e .
 tech-architect build-index
 tech-architect context "Should Phase 1 use hybrid retrieval immediately?"
 tech-architect ask "Should we add Redis now or defer it?"
@@ -87,6 +89,8 @@ tech-architect ask --config "/absolute/path/to/project/.houram/knowledge_sources
 ```
 
 Use `context` when you want retrieved evidence to paste into Cursor. Use `ask` when you want the local CLI to answer with the same advisor structure.
+
+Embedding limits: OpenAI embeddings reject any single input longer than **8192 tokens**. If indexing fails with `maximum input length`, lower `TECH_ARCHITECT_EMBED_MAX_CHARS` / `TECH_ARCHITECT_EMBED_CHUNK_CHARS` in `.env` (see `.env.example`).
 
 ## Houram-team Mode
 
