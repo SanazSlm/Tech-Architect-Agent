@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import math
 import os
 import random
 import re
@@ -149,14 +150,6 @@ def _is_embedding_length_error(error: BadRequestError) -> bool:
     return "maximum input length" in message or "8192" in message
 
 
-def _parse_invalid_input_index(error: BadRequestError) -> int | None:
-    message = str(error)
-    match = re.search(r"Invalid 'input\[(\d+)\]'", message)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
 def _split_text_in_half(text: str) -> tuple[str, str]:
     if len(text) <= 1:
         return text, ""
@@ -166,38 +159,81 @@ def _split_text_in_half(text: str) -> tuple[str, str]:
     return left.strip(), right.strip()
 
 
-def embed_texts_resilient(client: OpenAI, texts: list[str]) -> list[list[float]]:
-    """Embed many strings, automatically splitting inputs that exceed model limits."""
+def _average_embeddings(vectors: list[list[float]]) -> list[float]:
+    if not vectors:
+        raise ValueError("No embeddings to average.")
+    dimension = len(vectors[0])
+    totals = [0.0] * dimension
+    for vector in vectors:
+        if len(vector) != dimension:
+            raise ValueError("Embedding dimension mismatch while averaging.")
+        for index, value in enumerate(vector):
+            totals[index] += value
+    count = float(len(vectors))
+    return [value / count for value in totals]
 
-    pending = list(texts)
 
+def _l2_normalize(vector: list[float]) -> list[float]:
+    norm = math.sqrt(sum(value * value for value in vector))
+    if norm == 0:
+        return list(vector)
+    return [value / norm for value in vector]
+
+
+def embed_single_text_with_retry(client: OpenAI, text: str, max_attempts: int = 8) -> list[float]:
+    """Embed one string with rate-limit retries."""
+
+    attempt = 1
     while True:
         try:
-            return embed_texts(client, pending)
-        except BadRequestError as error:
-            if not _is_embedding_length_error(error):
+            return embed_texts(client, [text])[0]
+        except RateLimitError as error:
+            if attempt >= max_attempts:
                 raise
-
-            bad_index = _parse_invalid_input_index(error)
-            if bad_index is None or bad_index < 0 or bad_index >= len(pending):
-                bad_index = max(range(len(pending)), key=lambda index: len(pending[index]))
-
-            bad_text = pending[bad_index]
-            left, right = _split_text_in_half(bad_text)
-
-            if not right:
-                raise typer.BadParameter(
-                    "Embedding input exceeded model limits and could not be split smaller. "
-                    "Try lowering TECH_ARCHITECT_EMBED_MAX_CHARS / TECH_ARCHITECT_EMBED_CHUNK_CHARS, "
-                    "or exclude extremely dense files from knowledge_sources.yaml."
-                ) from error
-
+            delay = _retry_delay_seconds(error, attempt)
             console.print(
-                f"[yellow]Embedding input too long; splitting one segment ({len(bad_text)} chars) "
-                f"into {len(left)} + {len(right)} chars and retrying...[/yellow]"
+                f"[yellow]Rate limited on embeddings (attempt {attempt}/{max_attempts}). "
+                f"Retrying in {delay:.2f}s...[/yellow]"
             )
+            time.sleep(delay)
+            attempt += 1
 
-            pending[bad_index : bad_index + 1] = [left, right]
+
+def embed_text_as_single_vector(client: OpenAI, text: str) -> list[float]:
+    """Return one embedding vector for arbitrary-length text by splitting and merging if needed."""
+
+    stripped = text.strip()
+    if not stripped:
+        raise ValueError("Cannot embed empty text.")
+
+    try:
+        return embed_single_text_with_retry(client, stripped)
+    except BadRequestError as error:
+        if not _is_embedding_length_error(error):
+            raise
+
+    left, right = _split_text_in_half(stripped)
+    if not right:
+        raise typer.BadParameter(
+            "Embedding input exceeded model limits and could not be split smaller. "
+            "Try lowering TECH_ARCHITECT_EMBED_MAX_CHARS / TECH_ARCHITECT_EMBED_CHUNK_CHARS, "
+            "or exclude extremely dense files from knowledge_sources.yaml."
+        ) from error
+
+    console.print(
+        f"[yellow]Embedding input too long; splitting one segment ({len(stripped)} chars) "
+        f"into {len(left)} + {len(right)} chars...[/yellow]"
+    )
+
+    left_vector = embed_text_as_single_vector(client, left) if left else None
+    right_vector = embed_text_as_single_vector(client, right) if right else None
+    pieces = [vector for vector in (left_vector, right_vector) if vector is not None]
+    if not pieces:
+        raise typer.BadParameter(
+            "Embedding split produced no embeddable segments. "
+            "Try lowering TECH_ARCHITECT_EMBED_MAX_CHARS / TECH_ARCHITECT_EMBED_CHUNK_CHARS."
+        )
+    return _l2_normalize(_average_embeddings(pieces))
 
 
 def _retry_delay_seconds(error: Exception, attempt: int) -> float:
@@ -210,27 +246,6 @@ def _retry_delay_seconds(error: Exception, attempt: int) -> float:
         base = min(8.0, 0.5 * (2 ** (attempt - 1)))
     jitter = random.uniform(0.0, 0.25)
     return base + jitter
-
-
-def embed_texts_with_retry(
-    client: OpenAI,
-    texts: list[str],
-    max_attempts: int = 8,
-) -> list[list[float]]:
-    attempt = 1
-    while True:
-        try:
-            return embed_texts_resilient(client, texts)
-        except RateLimitError as error:
-            if attempt >= max_attempts:
-                raise
-            delay = _retry_delay_seconds(error, attempt)
-            console.print(
-                f"[yellow]Rate limited on embeddings (attempt {attempt}/{max_attempts}). "
-                f"Retrying in {delay:.2f}s...[/yellow]"
-            )
-            time.sleep(delay)
-            attempt += 1
 
 
 def get_collection(config: dict[str, Any], index_dir: Path):
@@ -395,7 +410,7 @@ def build_index(
     while offset < len(chunks):
         batch = chunks[offset : offset + current_batch_size]
         try:
-            embeddings = embed_texts_with_retry(client, [chunk.text for chunk in batch])
+            embeddings = [embed_text_as_single_vector(client, chunk.text) for chunk in batch]
         except RateLimitError:
             if current_batch_size == 1:
                 raise
@@ -422,7 +437,7 @@ def retrieve(question: str, config_path: Path, index_dir: Path | None, top_k: in
     client = require_openai_client()
     resolved_index_dir = resolve_index_dir(config_path, index_dir)
     collection = get_collection(config, resolved_index_dir)
-    query_embedding = embed_texts_resilient(client, [question])[0]
+    query_embedding = embed_text_as_single_vector(client, question)
 
     result = collection.query(query_embeddings=[query_embedding], n_results=top_k)
     documents = result.get("documents", [[]])[0]
