@@ -6,16 +6,18 @@ import math
 import os
 import random
 import re
+import socket
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import chromadb
 import typer
 import yaml
 from dotenv import load_dotenv
-from openai import BadRequestError, OpenAI, RateLimitError
+from openai import APIConnectionError, APITimeoutError, BadRequestError, OpenAI, RateLimitError
 from rich.console import Console
 from rich.panel import Panel
 
@@ -180,9 +182,53 @@ def _l2_normalize(vector: list[float]) -> list[float]:
     return [value / norm for value in vector]
 
 
-def embed_single_text_with_retry(client: OpenAI, text: str, max_attempts: int = 8) -> list[float]:
-    """Embed one string with rate-limit retries."""
+def _max_api_attempts() -> int:
+    raw = os.getenv("TECH_ARCHITECT_API_MAX_ATTEMPTS", "10")
+    try:
+        value = int(raw)
+    except ValueError:
+        value = 10
+    return max(3, min(value, 50))
 
+
+def _connection_retry_delay(attempt: int) -> float:
+    base = min(30.0, 1.0 * (2 ** (attempt - 1)))
+    jitter = random.uniform(0.0, 0.5)
+    return base + jitter
+
+
+def _openai_network_hint(error: Exception) -> str:
+    msg = str(error).lower()
+    lines = [
+        "Could not complete the request. Check the following:",
+        "  • Network / VPN is up (offline causes connection errors).",
+        "  • OPENAI_BASE_URL is unset for api.openai.com, or a full URL "
+        "(e.g. https://api.openai.com/v1). A bare hostname or typo breaks DNS.",
+        "  • Corporate proxy/firewall: you may need proxy env vars or a reachable endpoint.",
+    ]
+    if (
+        "nodename nor servname" in msg
+        or "name or service not known" in msg
+        or "failed to resolve" in msg
+        or "could not resolve host" in msg
+    ):
+        lines.insert(
+            1,
+            "  • DNS failed to resolve the API host — fix OPENAI_BASE_URL or DNS/VPN.",
+        )
+    return "\n".join(lines)
+
+
+def _exit_api_unreachable(error: Exception) -> None:
+    console.print("[bold red]OpenAI API unreachable after repeated retries.[/bold red]")
+    console.print(_openai_network_hint(error))
+    raise typer.Exit(code=1) from error
+
+
+def embed_single_text_with_retry(client: OpenAI, text: str) -> list[float]:
+    """Embed one string; retry rate limits and transient connection failures."""
+
+    max_attempts = _max_api_attempts()
     attempt = 1
     while True:
         try:
@@ -194,6 +240,46 @@ def embed_single_text_with_retry(client: OpenAI, text: str, max_attempts: int = 
             console.print(
                 f"[yellow]Rate limited on embeddings (attempt {attempt}/{max_attempts}). "
                 f"Retrying in {delay:.2f}s...[/yellow]"
+            )
+            time.sleep(delay)
+            attempt += 1
+        except (APIConnectionError, APITimeoutError) as error:
+            if attempt >= max_attempts:
+                _exit_api_unreachable(error)
+            delay = _connection_retry_delay(attempt)
+            console.print(
+                f"[yellow]API connection issue on embeddings ({attempt}/{max_attempts}): "
+                f"{error!s}. Retrying in {delay:.1f}s...[/yellow]"
+            )
+            time.sleep(delay)
+            attempt += 1
+
+
+def chat_completions_create_with_retry(client: OpenAI, **kwargs: Any):
+    """chat.completions.create with retries for rate limits and connection errors."""
+
+    max_attempts = _max_api_attempts()
+    attempt = 1
+    while True:
+        try:
+            return client.chat.completions.create(**kwargs)
+        except RateLimitError as error:
+            if attempt >= max_attempts:
+                raise
+            delay = _retry_delay_seconds(error, attempt)
+            console.print(
+                f"[yellow]Rate limited on chat completion ({attempt}/{max_attempts}). "
+                f"Retrying in {delay:.2f}s...[/yellow]"
+            )
+            time.sleep(delay)
+            attempt += 1
+        except (APIConnectionError, APITimeoutError) as error:
+            if attempt >= max_attempts:
+                _exit_api_unreachable(error)
+            delay = _connection_retry_delay(attempt)
+            console.print(
+                f"[yellow]API connection issue on chat ({attempt}/{max_attempts}): "
+                f"{error!s}. Retrying in {delay:.1f}s...[/yellow]"
             )
             time.sleep(delay)
             attempt += 1
@@ -253,10 +339,55 @@ def get_collection(config: dict[str, Any], index_dir: Path):
     return chroma.get_or_create_collection(name=config["index_name"])
 
 
+def _validate_openai_base_url() -> None:
+    raw = (os.getenv("OPENAI_BASE_URL") or "").strip()
+    if not raw:
+        return
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise typer.BadParameter(
+            f"OPENAI_BASE_URL must be a full URL with scheme and host (got {raw!r}). "
+            "Example: https://api.openai.com/v1"
+        )
+    if not parsed.hostname:
+        raise typer.BadParameter(
+            f"OPENAI_BASE_URL has no hostname (got {raw!r}). Example: https://api.openai.com/v1"
+        )
+
+
+def _openai_target_hostname() -> str:
+    raw = (os.getenv("OPENAI_BASE_URL") or "").strip()
+    if raw:
+        hostname = urlparse(raw).hostname
+        if hostname:
+            return hostname
+    return "api.openai.com"
+
+
+def _verify_openai_host_resolves() -> None:
+    if os.getenv("TECH_ARCHITECT_SKIP_OPENAI_DNS_CHECK", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    ):
+        return
+    host = _openai_target_hostname()
+    try:
+        socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)
+    except socket.gaierror as error:
+        raise typer.BadParameter(
+            f"DNS could not resolve OpenAI API host {host!r} ({error}). "
+            "Fix OPENAI_BASE_URL, reconnect network/VPN, or set DNS. "
+            "To skip this check (not recommended): TECH_ARCHITECT_SKIP_OPENAI_DNS_CHECK=1"
+        ) from error
+
+
 def require_openai_client() -> OpenAI:
     load_dotenv()
     if not os.getenv("OPENAI_API_KEY"):
         raise typer.BadParameter("OPENAI_API_KEY is required for embeddings or local answer generation.")
+    _validate_openai_base_url()
+    _verify_openai_host_resolves()
     return OpenAI()
 
 
@@ -495,7 +626,8 @@ def ask(
         f"Source: {chunk['path']}#chunk-{chunk['chunk']}\n{chunk['text']}" for chunk in chunks
     )
 
-    response = client.chat.completions.create(
+    response = chat_completions_create_with_retry(
+        client,
         model=os.getenv("TECH_ARCHITECT_MODEL", "gpt-4.1"),
         temperature=0.2,
         messages=[
