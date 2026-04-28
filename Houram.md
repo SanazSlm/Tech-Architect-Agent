@@ -54,3 +54,5 @@ tech-architect build-index --config /path/to/project/.houram/knowledge_sources.y
 ```bash
 tech-architect build-index --config /path/to/project/.houram/knowledge_sources.yaml
 ```
+
+On a Mac you can **automate** that weekly: see **README → Mac automation** (`scripts/mac/install_launch_agent.sh`, `TECH_ARCHITECT_KNOWLEDGE_CONFIG` in this repo’s `.env`).

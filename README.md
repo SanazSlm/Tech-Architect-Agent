@@ -71,6 +71,33 @@ Houram stays aligned with your products when **three** things move together:
 2. **`.houram/knowledge_sources.yaml`** — which repos and doc trees are indexed (add new products or ADR roots here).
 3. **`tech-architect build-index --config ".../.houram/knowledge_sources.yaml"`** — refresh the local index after substantive doc/code changes (default skips chunks already stored; use `--reindex-all` only when you need a full re-embed).
 
+## Mac automation (weekly index refresh)
+
+Your Mac can re-run **`build-index`** on a schedule so the learning hub stays warm without manual steps.
+
+1. In this repo, set **`TECH_ARCHITECT_KNOWLEDGE_CONFIG`** in **`.env`** to the absolute path of your `knowledge_sources.yaml` (for example LibZone’s `.houram/knowledge_sources.yaml`). Keep **`OPENAI_API_KEY`** there too.
+2. Ensure the venv exists and the CLI is installed: `source .venv/bin/activate && pip install -e .`
+3. Install a **LaunchAgent** (default: **Sunday 06:00**). Optional env vars when installing: `HOURAM_LAUNCH_WEEKDAY`, `HOURAM_LAUNCH_HOUR`, `HOURAM_LAUNCH_MINUTE` (`Weekday` **0** or **7** = Sunday in `launchd`).
+
+```bash
+cd "/Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent"
+./scripts/mac/install_launch_agent.sh
+```
+
+Logs: **`~/Library/Logs/com.houram.refresh-index.out.log`** and **`.err.log`**.
+
+Test one run immediately:
+
+```bash
+launchctl kickstart -k "gui/$(id -u)/com.houram.refresh-index"
+```
+
+Remove automation:
+
+```bash
+./scripts/mac/uninstall_launch_agent.sh
+```
+
 ## Optional Local Knowledge Index
 
 The project includes an optional retrieval helper. It indexes configured project docs/code read-only into a local Chroma collection and can return relevant context for a question.
