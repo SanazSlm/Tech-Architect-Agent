@@ -71,6 +71,8 @@ Houram stays aligned with your products when **three** things move together:
 2. **`.houram/knowledge_sources.yaml`** — which repos and doc trees are indexed (add new products or ADR roots here).
 3. **`tech-architect build-index --config ".../.houram/knowledge_sources.yaml"`** — refresh the local index after substantive doc/code changes (default skips chunks already stored; use `--reindex-all` only when you need a full re-embed).
 
+Versioned snapshots of project Houram files (`PROJECT_CONTEXT.md`, `knowledge_sources.yaml`) can live on **per-product Git branches** in this repo; see [`projects/README.md`](projects/README.md) (e.g. branch **`LibZone`**).
+
 ## Mac automation (weekly index refresh)
 
 Your Mac can re-run **`build-index`** on a schedule so the learning hub stays warm without manual steps.

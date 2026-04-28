@@ -5,3 +5,6 @@ __pycache__/
 *.egg-info/
 .env
 .DS_Store
+
+# Houram Chroma indexes under project branches (projects/<Name>/.houram/)
+projects/**/.houram/chroma/
