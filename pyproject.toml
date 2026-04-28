@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tech-architect-agent"
+version = "0.1.0"
+description = "Read-only technical advisor workspace and optional project knowledge index."
+requires-python = ">=3.11"
+dependencies = [
+  "chromadb",
+  "openai",
+  "python-dotenv",
+  "pyyaml",
+  "rich",
+  "typer",
+]
+
+[project.scripts]
+tech-architect = "tech_architect_agent.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]

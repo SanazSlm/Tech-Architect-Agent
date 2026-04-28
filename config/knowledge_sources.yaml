@@ -1,0 +1,84 @@
+# Read-only knowledge sources for Houram, the Tech Architect Agent.
+# The optional CLI uses these paths to build a local advisor index.
+# LibZone is the current active project. Add future project docs/source paths here.
+
+index_name: libzone_technical_architecture
+
+sources:
+  - name: advisor_context
+    root: /Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent
+    globs:
+      - AGENTS.md
+      - prompts/*.md
+      - knowledge/*.md
+
+  - name: libzone_product_documents
+    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/Documents
+    globs:
+      - "*.md"
+      - "*.plan.md"
+      - "*.txt"
+
+  - name: libzone_core
+    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-core
+    globs:
+      - README.md
+      - "**/*.py"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.toml"
+    exclude:
+      - ".venv/**"
+      - "data/**"
+      - "books/**"
+      - "__pycache__/**"
+
+  - name: libzone_admin
+    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-admin
+    globs:
+      - README.md
+      - AGENTS.md
+      - "app/**/*.ts"
+      - "app/**/*.tsx"
+      - "lib/**/*.ts"
+      - "features/**/*.md"
+    exclude:
+      - "node_modules/**"
+      - ".next/**"
+      - "coverage/**"
+
+  - name: libzone_ui
+    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-ui
+    globs:
+      - README.md
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.md"
+    exclude:
+      - "node_modules/**"
+      - ".next/**"
+      - "coverage/**"
+
+  - name: libzone_evals
+    root: /Users/sanazslm/Documents/LibZone.ca/libzone-evals
+    globs:
+      - README.md
+      - "**/*.py"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.md"
+    exclude:
+      - ".venv/**"
+      - "__pycache__/**"
+
+  - name: libzone_evals_review
+    root: /Users/sanazslm/Documents/LibZone.ca/libzone-evals-review
+    globs:
+      - README.md
+      - "**/*.py"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - "**/*.md"
+    exclude:
+      - ".venv/**"
+      - "__pycache__/**"
