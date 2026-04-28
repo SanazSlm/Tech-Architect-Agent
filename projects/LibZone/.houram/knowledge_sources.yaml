@@ -1,0 +1,50 @@
+index_name: libzone_technical_knowledge
+sources:
+- name: houram_context
+  root: /Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent
+  globs:
+  - AGENTS.md
+  - prompts/*.md
+  - knowledge/*.md
+- name: project_docs
+  root: /Users/sanazslm/Documents/LibZone.ca/LibZone/Documents
+  globs:
+  - '*.md'
+  - '*.plan.md'
+  - '*.txt'
+- name: project_source
+  root: /Users/sanazslm/Documents/LibZone.ca/LibZone
+  globs:
+  - README.md
+  - docs/**/*.md
+  - '**/*.py'
+  - '**/*.ts'
+  - '**/*.tsx'
+  - '**/*.js'
+  - '**/*.md'
+  - '**/*.yaml'
+  - '**/*.yml'
+  - '**/*.toml'
+  - '**/*.json'
+  exclude:
+  - .houram/**
+  - .git/**
+  - .venv/**
+  - venv/**
+  - .cache/**
+  - node_modules/**
+  - .next/**
+  - .turbo/**
+  - .pytest_cache/**
+  - .mypy_cache/**
+  - .ruff_cache/**
+  - .cursor/**
+  - .vscode/**
+  - coverage/**
+  - dist/**
+  - build/**
+  - libzone-core/data/**
+  - libzone-core/books/**
+  - libzone-admin/public/mockServiceWorker.js
+  - libzone-admin/openapi/admin-api.yaml
+  - __pycache__/**

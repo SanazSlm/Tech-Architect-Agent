@@ -1,0 +1,4 @@
+# Local vector index and secrets — never commit
+chroma/
+.env
+*.sqlite3
