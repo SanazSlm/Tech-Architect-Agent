@@ -18,10 +18,14 @@ The agent acts as an on-demand CTO, software architect, and senior AI engineer. 
    - Create a new **User Rule**
    - Paste the contents of `rules/houram-user-rule.md`
 
-3. Use `Houram, ...` when you want to explicitly call the advisor, for example:
+3. Use `Houram, ...` for standard mode, or `Houram-team, ...` for dual-view team mode:
 
    ```text
    Houram, what is the best answer for this architecture question?
+   ```
+
+   ```text
+   Houram-team, should we implement this now or defer it?
    ```
 
 4. If you need code-specific advice, attach the relevant project file or paste the error. The advisor should not invent current implementation details.
@@ -83,6 +87,14 @@ tech-architect ask --config "/absolute/path/to/project/.houram/knowledge_sources
 ```
 
 Use `context` when you want retrieved evidence to paste into Cursor. Use `ask` when you want the local CLI to answer with the same advisor structure.
+
+## Houram-team Mode
+
+`Houram-team` is a collaboration phrase that produces:
+
+- `Primary View` (default architecture recommendation, OpenAI perspective)
+- `Challenger View` (counter-arguments and risks, Claude Sonnet perspective when available)
+- `Final Call` (one resolved recommendation)
 
 ## Operating Rules
 

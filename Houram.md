@@ -14,10 +14,22 @@ When the user starts a message with `Houram,` or asks `Houram` by name, treat it
 - For LibZone, preserve its grounded-citation product promise.
 - For future projects, learn from the provided project docs before making project-specific recommendations.
 
+When the user starts a message with `Houram-team,`, use team mode:
+
+- `Primary View`: first recommendation from Houram's default architecture perspective.
+- `Challenger View`: critical review from an alternate model perspective (Claude Sonnet when available).
+- `Final Call`: one decision that resolves trade-offs and disagreement.
+
 Example:
 
 ```text
 Houram, what is the best answer for this architecture question?
+```
+
+Team example:
+
+```text
+Houram-team, should we add Redis now or defer it?
 ```
 
 Means:

@@ -232,7 +232,12 @@ def init_project(
 
 @app.command("build-index")
 def build_index(
-    config_path: Path = typer.Option(DEFAULT_CONFIG, help="Knowledge source config."),
+    config_path: Path = typer.Option(
+        DEFAULT_CONFIG,
+        "--config",
+        "--config-path",
+        help="Knowledge source config.",
+    ),
     index_dir: Path | None = typer.Option(None, help="Local Chroma persistence directory."),
     batch_size: int = typer.Option(64, help="Embedding batch size."),
 ) -> None:
@@ -291,7 +296,12 @@ def retrieve(question: str, config_path: Path, index_dir: Path | None, top_k: in
 @app.command("context")
 def context(
     question: str = typer.Argument(..., help="Technical question to retrieve context for."),
-    config_path: Path = typer.Option(DEFAULT_CONFIG, help="Knowledge source config."),
+    config_path: Path = typer.Option(
+        DEFAULT_CONFIG,
+        "--config",
+        "--config-path",
+        help="Knowledge source config.",
+    ),
     index_dir: Path | None = typer.Option(None, help="Local Chroma persistence directory."),
     top_k: int = typer.Option(6, help="Number of context chunks to return."),
 ) -> None:
@@ -306,7 +316,12 @@ def context(
 @app.command("ask")
 def ask(
     question: str = typer.Argument(..., help="Technical question for the advisor."),
-    config_path: Path = typer.Option(DEFAULT_CONFIG, help="Knowledge source config."),
+    config_path: Path = typer.Option(
+        DEFAULT_CONFIG,
+        "--config",
+        "--config-path",
+        help="Knowledge source config.",
+    ),
     index_dir: Path | None = typer.Option(None, help="Local Chroma persistence directory."),
     prompt_path: Path = typer.Option(DEFAULT_PROMPT, help="Advisor system prompt."),
     top_k: int = typer.Option(6, help="Number of context chunks to use."),

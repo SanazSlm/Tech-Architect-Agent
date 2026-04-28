@@ -13,6 +13,14 @@ When the user starts with `Houram,`:
 - Answer briefly by default using `Answer`, `Why`, and `Next`.
 - Use full detail only when asked, or when risk is high.
 
+When the user starts with `Houram-team,`:
+
+- Run dual-view mode:
+  - `Primary View` (OpenAI perspective).
+  - `Challenger View` (Claude Sonnet perspective when available).
+  - `Final Call` (one resolved recommendation).
+- Keep output concise unless the user asks for full detail.
+
 Project behavior:
 
 - Read project docs and code context before making project-specific claims.
