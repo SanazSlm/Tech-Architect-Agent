@@ -225,14 +225,17 @@ def _exit_api_unreachable(error: Exception) -> None:
     raise typer.Exit(code=1) from error
 
 
-def embed_single_text_with_retry(client: OpenAI, text: str) -> list[float]:
-    """Embed one string; retry rate limits and transient connection failures."""
+def embed_chunk_texts_with_retry(client: OpenAI, texts: list[str]) -> list[list[float]]:
+    """Embed many strings in as few API calls as possible; retry rate limits and outages."""
+
+    if not texts:
+        return []
 
     max_attempts = _max_api_attempts()
     attempt = 1
     while True:
         try:
-            return embed_texts(client, [text])[0]
+            return embed_texts(client, texts)
         except RateLimitError as error:
             if attempt >= max_attempts:
                 raise
@@ -253,6 +256,12 @@ def embed_single_text_with_retry(client: OpenAI, text: str) -> list[float]:
             )
             time.sleep(delay)
             attempt += 1
+
+
+def embed_single_text_with_retry(client: OpenAI, text: str) -> list[float]:
+    """Embed one string (wrapper around batched API)."""
+
+    return embed_chunk_texts_with_retry(client, [text])[0]
 
 
 def chat_completions_create_with_retry(client: OpenAI, **kwargs: Any):
@@ -320,6 +329,24 @@ def embed_text_as_single_vector(client: OpenAI, text: str) -> list[float]:
             "Try lowering TECH_ARCHITECT_EMBED_MAX_CHARS / TECH_ARCHITECT_EMBED_CHUNK_CHARS."
         )
     return _l2_normalize(_average_embeddings(pieces))
+
+
+def embed_vectors_for_chunks(client: OpenAI, chunks: list[Chunk]) -> list[list[float]]:
+    """One embedding per chunk: batched API calls; split batch or text on token-limit errors."""
+
+    if not chunks:
+        return []
+
+    texts = [chunk.text for chunk in chunks]
+    try:
+        return embed_chunk_texts_with_retry(client, texts)
+    except BadRequestError as error:
+        if not _is_embedding_length_error(error):
+            raise
+        if len(chunks) == 1:
+            return [embed_text_as_single_vector(client, chunks[0].text)]
+        mid = max(1, len(chunks) // 2)
+        return embed_vectors_for_chunks(client, chunks[:mid]) + embed_vectors_for_chunks(client, chunks[mid:])
 
 
 def _retry_delay_seconds(error: Exception, attempt: int) -> float:
@@ -517,7 +544,12 @@ def build_index(
         help="Knowledge source config.",
     ),
     index_dir: Path | None = typer.Option(None, help="Local Chroma persistence directory."),
-    batch_size: int = typer.Option(64, help="Embedding batch size."),
+    batch_size: int = typer.Option(64, help="Embedding batch size (many chunks per API request)."),
+    skip_existing: bool = typer.Option(
+        True,
+        "--skip-existing/--reindex-all",
+        help="Skip chunks already in the index (fast resume). Use --reindex-all to re-embed everything.",
+    ),
 ) -> None:
     """Build or refresh the local advisor knowledge index."""
 
@@ -535,13 +567,31 @@ def build_index(
             chunks.extend(make_chunks(path, text))
 
     console.print(f"Indexing {len(chunks)} chunks from {len(source_files)} files...")
+    if skip_existing:
+        console.print("[dim]Skipping chunk IDs already stored (--reindex-all to force full rebuild).[/dim]")
 
+    skipped_total = 0
     offset = 0
     current_batch_size = max(1, batch_size)
     while offset < len(chunks):
         batch = chunks[offset : offset + current_batch_size]
+        skipped_here = 0
+        pending = list(batch)
+        if skip_existing:
+            found = collection.get(ids=[chunk.id for chunk in batch])
+            have = set(found.get("ids") or [])
+            pending = [c for c in batch if c.id not in have]
+            skipped_here = len(batch) - len(pending)
+            if not pending:
+                skipped_total += skipped_here
+                offset += len(batch)
+                console.print(
+                    f"Progress {offset}/{len(chunks)} (skipped {skipped_here} already in index)..."
+                )
+                continue
+
         try:
-            embeddings = [embed_text_as_single_vector(client, chunk.text) for chunk in batch]
+            embeddings = embed_vectors_for_chunks(client, pending)
         except RateLimitError:
             if current_batch_size == 1:
                 raise
@@ -552,15 +602,27 @@ def build_index(
             continue
 
         collection.upsert(
-            ids=[chunk.id for chunk in batch],
-            documents=[chunk.text for chunk in batch],
-            metadatas=[chunk.metadata for chunk in batch],
+            ids=[chunk.id for chunk in pending],
+            documents=[chunk.text for chunk in pending],
+            metadatas=[chunk.metadata for chunk in pending],
             embeddings=embeddings,
         )
         offset += len(batch)
-        console.print(f"Indexed {offset}/{len(chunks)} chunks")
+        if skip_existing:
+            skipped_total += skipped_here
+        new_count = len(pending)
+        if skip_existing and new_count < len(batch):
+            console.print(
+                f"Progress {offset}/{len(chunks)} (embedded {new_count} new, {len(batch) - new_count} skipped)..."
+            )
+        else:
+            console.print(f"Progress {offset}/{len(chunks)} (embedded {new_count} chunk(s) this step)...")
 
     console.print("[green]Knowledge index is ready.[/green]")
+    if skip_existing and skipped_total:
+        console.print(
+            f"[cyan]Resume: skipped {skipped_total} chunk(s) that were already indexed.[/cyan]"
+        )
 
 
 def retrieve(question: str, config_path: Path, index_dir: Path | None, top_k: int) -> list[dict[str, str]]:
