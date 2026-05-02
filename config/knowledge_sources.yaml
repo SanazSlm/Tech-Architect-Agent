@@ -1,26 +1,26 @@
 # Read-only knowledge sources for Houram, the Tech Architect Agent.
 # The optional CLI uses these paths to build a local advisor index.
-# LibZone is the current active project. Add future project docs/source paths here.
+# Paths below match the DeepReading workspace layout; adjust roots if your clones live elsewhere.
 
-index_name: libzone_technical_architecture
+index_name: ordelex_technical_architecture
 
 sources:
   - name: advisor_context
-    root: /Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent
+    root: /Users/sanazslm/Documents/DeepReading/Tech Architect Agent
     globs:
       - AGENTS.md
       - prompts/*.md
       - knowledge/*.md
 
-  - name: libzone_product_documents
-    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/Documents
+  - name: ordelex_product_documents
+    root: /Users/sanazslm/Documents/DeepReading/Ordelex/Documents
     globs:
       - "*.md"
       - "*.plan.md"
       - "*.txt"
 
-  - name: libzone_core
-    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-core
+  - name: ordelex_core
+    root: /Users/sanazslm/Documents/DeepReading/Ordelex/ordelex-core
     globs:
       - README.md
       - "**/*.py"
@@ -33,8 +33,8 @@ sources:
       - "books/**"
       - "__pycache__/**"
 
-  - name: libzone_admin
-    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-admin
+  - name: ordelex_admin
+    root: /Users/sanazslm/Documents/DeepReading/Ordelex/ordelex-admin
     globs:
       - README.md
       - AGENTS.md
@@ -47,8 +47,8 @@ sources:
       - ".next/**"
       - "coverage/**"
 
-  - name: libzone_ui
-    root: /Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-ui
+  - name: ordelex_ui
+    root: /Users/sanazslm/Documents/DeepReading/Ordelex/ordelex-ui
     globs:
       - README.md
       - "**/*.ts"
@@ -59,8 +59,8 @@ sources:
       - ".next/**"
       - "coverage/**"
 
-  - name: libzone_evals
-    root: /Users/sanazslm/Documents/LibZone.ca/libzone-evals
+  - name: ordelex_evals
+    root: /Users/sanazslm/Documents/DeepReading/ordelex-evals
     globs:
       - README.md
       - "**/*.py"
@@ -71,8 +71,8 @@ sources:
       - ".venv/**"
       - "__pycache__/**"
 
-  - name: libzone_evals_review
-    root: /Users/sanazslm/Documents/LibZone.ca/libzone-evals-review
+  - name: ordelex_evals_review
+    root: /Users/sanazslm/Documents/DeepReading/ordelex-evals-review
     globs:
       - README.md
       - "**/*.py"

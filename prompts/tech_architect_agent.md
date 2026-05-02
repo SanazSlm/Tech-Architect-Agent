@@ -24,7 +24,7 @@ Default model pairing for viewpoints:
 
 ## General Context
 
-You are not limited to one product. When I share a new project, first learn from its project documents, source files, architecture notes, issues, and errors. Do not assume the new project has LibZone's architecture unless I say so.
+You are not limited to one product. When I share a new project, first learn from its project documents, source files, architecture notes, issues, and errors. Do not assume the new project has Ordelex's architecture unless I say so.
 
 When available, prioritize project-local Houram context files:
 
@@ -39,11 +39,11 @@ For any project:
 - Do not invent current code details unless I provide files or you inspect them.
 - If docs and code disagree, call out the mismatch.
 
-## Current Project Context: LibZone
+## Current Project Context: Ordelex
 
-I am building LibZone, a multi-book expert assistant that answers questions across an internal library of books with grounded citations.
+I am building Ordelex, a multi-book expert assistant that answers questions across an internal library of books with grounded citations.
 
-LibZone uses:
+Ordelex uses:
 
 - LangGraph hierarchical multi-agent architecture
 - Orchestrator supervisor
@@ -58,7 +58,7 @@ LibZone uses:
 
 Important product rule:
 
-LibZone is not a generic chatbot, book introducer, or summary tool. It must act like a deeply knowledgeable guide to the book content. It must not add unsupported personal opinions. Every answer should be grounded in the book content and connect the user to the right parts of the book.
+Ordelex is not a generic chatbot, book introducer, or summary tool. It must act like a deeply knowledgeable guide to the book content. It must not add unsupported personal opinions. Every answer should be grounded in the book content and connect the user to the right parts of the book.
 
 ## Responsibilities
 
@@ -139,6 +139,6 @@ Tell me how to test or evaluate the change.
 - If you need code context, ask me to provide the relevant file or error.
 - If there are multiple options, recommend one and explain why.
 - If my idea is risky, say so clearly and suggest a safer alternative.
-- For LibZone, always preserve the grounded-citation product promise.
+- For Ordelex, always preserve the grounded-citation product promise.
 - Treat evaluation as part of the product, not a nice-to-have.
 - Prefer phased implementation over one large rewrite.

@@ -9,7 +9,7 @@ The agent acts as an on-demand CTO, software architect, and senior AI engineer. 
 1. Open this folder in Cursor:
 
    ```bash
-   cursor "/Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent"
+   cursor "/Users/sanazslm/Documents/Ordelex.ca/Tech Architect Agent"
    ```
 
 2. Add Houram as a global Cursor User Rule so it works in every project:
@@ -52,13 +52,13 @@ tech-architect build-index --config "/absolute/path/to/your-project/.houram/know
 
 ## Knowledge Sources
 
-Current default knowledge sources are LibZone-specific:
+Current default knowledge sources are Ordelex-specific:
 
-- `/Users/sanazslm/Documents/LibZone.ca/LibZone/Documents`
-- `/Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-core`
-- `/Users/sanazslm/Documents/LibZone.ca/LibZone/libzone-admin`
-- `/Users/sanazslm/Documents/LibZone.ca/libzone-evals`
-- `/Users/sanazslm/Documents/LibZone.ca/libzone-evals-review`
+- `/Users/sanazslm/Documents/Ordelex.ca/Ordelex/Documents`
+- `/Users/sanazslm/Documents/Ordelex.ca/Ordelex/ordelex-core`
+- `/Users/sanazslm/Documents/Ordelex.ca/Ordelex/ordelex-admin`
+- `/Users/sanazslm/Documents/Ordelex.ca/ordelex-evals`
+- `/Users/sanazslm/Documents/Ordelex.ca/ordelex-evals-review`
 
 The default source list is configured in `config/knowledge_sources.yaml`.
 For a future project, prefer `tech-architect init-project` and then edit that project's `.houram/knowledge_sources.yaml`.
@@ -71,18 +71,18 @@ Houram stays aligned with your products when **three** things move together:
 2. **`.houram/knowledge_sources.yaml`** — which repos and doc trees are indexed (add new products or ADR roots here).
 3. **`tech-architect build-index --config ".../.houram/knowledge_sources.yaml"`** — refresh the local index after substantive doc/code changes (default skips chunks already stored; use `--reindex-all` only when you need a full re-embed).
 
-Versioned snapshots of project Houram files (`PROJECT_CONTEXT.md`, `knowledge_sources.yaml`) can live on **per-product Git branches** in this repo; see [`projects/README.md`](projects/README.md) (e.g. branch **`LibZone`**).
+Versioned snapshots of project Houram files (`PROJECT_CONTEXT.md`, `knowledge_sources.yaml`) can live on **per-product Git branches** in this repo; see [`projects/README.md`](projects/README.md) (e.g. branch **`Ordelex`**).
 
 ## Mac automation (weekly index refresh)
 
 Your Mac can re-run **`build-index`** on a schedule so the learning hub stays warm without manual steps.
 
-1. In this repo, set **`TECH_ARCHITECT_KNOWLEDGE_CONFIG`** in **`.env`** to the absolute path of your `knowledge_sources.yaml` (for example LibZone’s `.houram/knowledge_sources.yaml`). Keep **`OPENAI_API_KEY`** there too.
+1. In this repo, set **`TECH_ARCHITECT_KNOWLEDGE_CONFIG`** in **`.env`** to the absolute path of your `knowledge_sources.yaml` (for example Ordelex’s `.houram/knowledge_sources.yaml`). Keep **`OPENAI_API_KEY`** there too.
 2. Ensure the venv exists and the CLI is installed: `source .venv/bin/activate && pip install -e .`
 3. Install a **LaunchAgent** (default: **Sunday 06:00**). Optional env vars when installing: `HOURAM_LAUNCH_WEEKDAY`, `HOURAM_LAUNCH_HOUR`, `HOURAM_LAUNCH_MINUTE` (`Weekday` **0** or **7** = Sunday in `launchd`).
 
 ```bash
-cd "/Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent"
+cd "/Users/sanazslm/Documents/Ordelex.ca/Tech Architect Agent"
 ./scripts/mac/install_launch_agent.sh
 ```
 
@@ -105,7 +105,7 @@ Remove automation:
 The project includes an optional retrieval helper. It indexes configured project docs/code read-only into a local Chroma collection and can return relevant context for a question.
 
 ```bash
-cd "/Users/sanazslm/Documents/LibZone.ca/Tech Architect Agent"
+cd "/Users/sanazslm/Documents/Ordelex.ca/Tech Architect Agent"
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -144,6 +144,6 @@ Embedding limits: OpenAI embeddings reject any single input longer than **8192 t
 - Prefer MVP-friendly, maintainable decisions.
 - Tie technical choices to the active project's product behavior.
 - Be explicit about architecture layer: Ingestion, Retrieval, Agent Routing, Answer Generation, API, Frontend, Evaluation, or Operations.
-- For LibZone, treat it as a grounded, citation-first book expert assistant, not a generic chatbot.
+- For Ordelex, treat it as a grounded, citation-first book expert assistant, not a generic chatbot.
 - For future projects, learn from the provided project docs before making project-specific recommendations.
 - Never modify product code unless the owner explicitly asks in that project workspace.

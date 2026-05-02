@@ -1,26 +1,26 @@
-# LibZone Technical Context
+# Ordelex Technical Context
 
-This file is a compact context brief for the Tech Architect Agent. Treat the product documents in `../LibZone/Documents` as the canonical source when more detail is needed.
+This file is a compact context brief for the Tech Architect Agent. Treat the product documents in the Ordelex monorepo `Documents/` tree as the canonical source when more detail is needed.
 
 ## Product Identity
 
-LibZone is a multi-book expert assistant for owned/internal books. It helps users understand book content through grounded answers, citations, navigation, and reading guidance.
+Ordelex is a multi-book expert assistant for owned/internal books. It helps users understand book content through grounded answers, citations, navigation, and reading guidance.
 
-LibZone must not behave like a generic chatbot. It should not invent unsupported opinions, summarize without grounding, or answer outside the provided book/library content when evidence is missing.
+Ordelex must not behave like a generic chatbot. It should not invent unsupported opinions, summarize without grounding, or answer outside the provided book/library content when evidence is missing.
 
 ## Current Repository Shape
 
-The LibZone monorepo contains:
+The Ordelex monorepo contains:
 
-- `libzone-core`: FastAPI backend, ingestion, APIs, agents, policies, workers, tests
-- `libzone-admin`: internal Next.js admin panel
-- `libzone-ui`: product reader UI scaffold
+- `ordelex-core`: FastAPI backend, ingestion, APIs, agents, policies, workers, tests
+- `ordelex-admin`: internal Next.js admin panel
+- `ordelex-ui`: product reader UI scaffold
 - `Documents`: PRD, product plan, taxonomy, and planning material
 
 Related repositories:
 
-- `libzone-evals`: evaluation suite
-- `libzone-evals-review`: review workflow for eval outputs
+- `ordelex-evals`: evaluation suite
+- `ordelex-evals-review`: review workflow for eval outputs
 
 ## Architecture Direction
 
@@ -102,7 +102,7 @@ The advisor should usually avoid:
 
 ## Quality Bar
 
-Every substantive LibZone answer should be evaluated against:
+Every substantive Ordelex answer should be evaluated against:
 
 - Is the answer grounded in retrieved book content?
 - Are citations correct and clickable?

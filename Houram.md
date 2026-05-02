@@ -11,7 +11,7 @@ When the user starts a message with `Houram,` or asks `Houram` by name, treat it
 - Keep advice practical for Cursor implementation.
 - Do not modify any product code unless explicitly asked.
 - Do not invent current code details without inspecting files or receiving context.
-- For LibZone, preserve its grounded-citation product promise.
+- For Ordelex, preserve its grounded-citation product promise.
 - For future projects, learn from the provided project docs before making project-specific recommendations.
 
 When the user starts a message with `Houram-team,`, use team mode:

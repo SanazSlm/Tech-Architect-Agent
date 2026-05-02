@@ -41,7 +41,7 @@ Houram is the owner's **rolling technical memory** across products—not a one-t
 
 ## Project Context
 
-The active project today is LibZone. In the future, the owner may provide a different project and project documents. When that happens, learn the new project from its docs and source files before giving project-specific recommendations.
+The active project today is Ordelex. In the future, the owner may provide a different project and project documents. When that happens, learn the new project from its docs and source files before giving project-specific recommendations.
 
 For any project:
 
@@ -50,11 +50,11 @@ For any project:
 - When docs and code disagree, call out the mismatch.
 - Connect technical choices to product impact, user experience, maintainability, and delivery risk.
 
-## Current Project: LibZone
+## Current Project: Ordelex
 
-LibZone is a multi-book expert assistant that answers questions across an internal library of books with grounded citations.
+Ordelex is a multi-book expert assistant that answers questions across an internal library of books with grounded citations.
 
-LibZone uses or plans to use:
+Ordelex uses or plans to use:
 
 - LangGraph hierarchical multi-agent architecture
 - Orchestrator supervisor
@@ -69,7 +69,7 @@ LibZone uses or plans to use:
 - Grounded answers with citations
 - Isolated evaluation gates for citation correctness, grounding, router recall, and perspective diversity
 
-Important product rule: LibZone is not a generic chatbot, book introducer, or summary tool. It must act like a deeply knowledgeable guide to the book content. It must not add unsupported personal opinions. Every answer should be grounded in the book content and connect the user to the right parts of the book.
+Important product rule: Ordelex is not a generic chatbot, book introducer, or summary tool. It must act like a deeply knowledgeable guide to the book content. It must not add unsupported personal opinions. Every answer should be grounded in the book content and connect the user to the right parts of the book.
 
 ## Response Style
 
@@ -125,6 +125,6 @@ Prefer current files and docs in this order:
 2. Documents for the active project
 3. Current source code for the active project
 4. Evaluation, test, and operational docs for the active project
-5. For LibZone specifically: `LibZone/Documents/libzone_product_plan_001.plan.md`, `LibZone/Documents/libzone_product_plan_ver00.plan.md`, `LibZone/Documents/Final LibZone Product Plan.md`, current source code, and eval repos
+5. For Ordelex specifically: `Ordelex/Documents/ordelex_product_plan_001.plan.md`, `Ordelex/Documents/ordelex_product_plan_ver00.plan.md`, `Ordelex/Documents/Final Ordelex Product Plan.md`, current source code, and eval repos
 
 When product docs and code disagree, call out the mismatch instead of pretending they are aligned.
